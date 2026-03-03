@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-ChitaCloud Finance Agent - AgentBeats Sprint 1 Entry
-SEC 10-K Analysis: Risk Classification, Business Summary, Consistency Check
+AutoPilotAI Finance Agent Server - AgentBeats Sprint 1
+OfficeQA benchmark: US Treasury Bulletin grounded reasoning.
 
-A2A Protocol compliant agent using official a2a-sdk.
-Competition: AgentBeats Phase 2, Sprint 1 - Finance Track
+Serves the A2A-compatible FinanceExecutor on the configured host/port.
 """
 
 import argparse
 import logging
 import uvicorn
+
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -25,42 +25,43 @@ log = logging.getLogger("finance_server")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ChitaCloud Finance Agent - SEC 10-K Analysis")
+    parser = argparse.ArgumentParser(description="AutoPilotAI Finance Agent - OfficeQA US Treasury Bulletin QA")
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--card-url", type=str, default=None)
     args = parser.parse_args()
 
-    skills = [
-        AgentSkill(
-            id="risk_classification",
-            name="SEC 10-K Risk Factor Classification",
-            description="Classifies risk factors from SEC 10-K Section 1A into 12 predefined categories: Market, Operational, Financial, Regulatory, Cybersecurity, Supply Chain, Reputational, Strategic, Macroeconomic, Environmental, Human Capital, Technology",
-            tags=["finance", "sec", "10-k", "risk"],
+    skill = AgentSkill(
+        id="treasury_bulletin_qa",
+        name="US Treasury Bulletin Question Answering",
+        description=(
+            "Answers grounded reasoning questions over US Treasury Bulletins "
+            "(1939-2025) from the FRASER archive. Capable of data extraction from "
+            "tables/figures, multi-step financial computations, statistical analysis, "
+            "and complex financial metric calculations."
         ),
-        AgentSkill(
-            id="business_summary",
-            name="SEC 10-K Business Summary Extraction",
-            description="Extracts industry type, products/services, and geographic markets from SEC 10-K Section 1",
-            tags=["finance", "sec", "10-k", "summary"],
-        ),
-        AgentSkill(
-            id="consistency_check",
-            name="SEC 10-K Cross-Section Consistency Check",
-            description="Verifies whether risks identified in Section 1A are discussed in Section 7 MD&A",
-            tags=["finance", "sec", "10-k", "consistency"],
-        ),
-    ]
+        tags=["finance", "treasury", "document-qa", "grounded-reasoning", "officeqa"],
+        examples=[
+            "What was the total public debt outstanding in January 1985?",
+            "Calculate the percent change in receipts between 1939 and 1940.",
+            "What were the total expenditures in fiscal year 1952?",
+        ],
+    )
 
     card = AgentCard(
-        name="chitacloud_finance_agent",
-        description="Finance agent for AgentBeats Sprint 1. Analyzes SEC 10-K filings: risk factor classification (12 categories), business summary extraction, and cross-section consistency verification between Section 1A and MD&A.",
+        name="AutoPilotAI Finance Agent",
+        description=(
+            "AgentBeats Sprint 1 Finance Track entry. OfficeQA-compatible agent "
+            "for US Treasury Bulletin grounded reasoning. Retrieves documents from "
+            "FRASER archive, extracts precise numerical values, and performs "
+            "multi-step financial computations over 697 PDFs spanning 1939-2025."
+        ),
         url=args.card_url or f"http://{args.host}:{args.port}/",
-        version="1.0.0",
+        version="4.0.0",
         default_input_modes=["text"],
         default_output_modes=["text"],
         capabilities=AgentCapabilities(streaming=True),
-        skills=skills,
+        skills=[skill],
     )
 
     handler = DefaultRequestHandler(
@@ -73,8 +74,9 @@ def main():
         http_handler=handler,
     )
 
-    log.info(f"Starting ChitaCloud Finance Agent on {args.host}:{args.port}")
-    log.info(f"Agent card URL: {args.card_url or f'http://{args.host}:{args.port}/'}")
+    log.info(f"Starting AutoPilotAI Finance Agent v4.0 on {args.host}:{args.port}")
+    log.info(f"Benchmark: OfficeQA - US Treasury Bulletins (1939-2025)")
+    log.info(f"Card URL: {args.card_url or f'http://{args.host}:{args.port}/'}")
     uvicorn.run(server.build(), host=args.host, port=args.port, timeout_keep_alive=300)
 
 
