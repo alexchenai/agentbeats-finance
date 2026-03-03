@@ -383,19 +383,42 @@ def get_cik(company_name: str) -> Optional[str]:
     """Get CIK for a company from hard-coded map or EDGAR lookup."""
     name_upper = company_name.upper().strip()
 
-    # Check hard-coded map first
-    for key, cik in COMPANY_CIK_MAP.items():
-        if key in name_upper or name_upper in key:
-            return cik
+    # 1. Exact match first (highest priority)
+    if name_upper in COMPANY_CIK_MAP:
+        return COMPANY_CIK_MAP[name_upper]
 
-    # Try loaded tickers
+    # 2. Match where the key equals the name (case-insensitive, already upper)
+    # Avoid partial-letter matches like 'T' matching 'INTEL'
+    # Only allow substring match if key length >= 3 chars
+    best_match = None
+    best_len = 0
+    for key, cik in COMPANY_CIK_MAP.items():
+        if len(key) < 3:
+            # Short keys (tickers like 'T', 'C', 'V') must match exactly
+            if key == name_upper:
+                return cik
+        else:
+            # Longer keys: allow substring match, pick longest
+            if key == name_upper:
+                return cik
+            if name_upper in key and len(key) > best_len:
+                best_match = cik
+                best_len = len(key)
+            elif key in name_upper and len(key) > best_len:
+                best_match = cik
+                best_len = len(key)
+
+    if best_match:
+        return best_match
+
+    # 3. Try loaded tickers (exact match)
     tickers = load_company_tickers()
     if name_upper in tickers:
         return tickers[name_upper]
 
-    # Fuzzy match
+    # 4. Fuzzy match against ticker list (only keys >= 3 chars)
     for key, cik in tickers.items():
-        if name_upper in key or key in name_upper:
+        if len(key) >= 3 and (name_upper in key or key in name_upper):
             return cik
 
     return None
@@ -533,12 +556,20 @@ def extract_quarter_from_question(question: str) -> Optional[int]:
 def extract_company_from_question(question: str) -> Optional[str]:
     """Extract company name from question."""
     # Check against known companies (longest match wins)
+    # Use word-boundary matching to avoid 'T' matching words containing 't'
     matches = []
     q_lower = question.lower()
 
     for key in COMPANY_CIK_MAP:
-        if key.lower() in q_lower:
-            matches.append(key)
+        k_lower = key.lower()
+        if len(k_lower) < 3:
+            # Short tickers: require word boundary match
+            if re.search(r'\b' + re.escape(k_lower) + r'\b', q_lower):
+                matches.append(key)
+        else:
+            # Longer names: simple substring match is fine
+            if k_lower in q_lower:
+                matches.append(key)
 
     if matches:
         # Return longest match
