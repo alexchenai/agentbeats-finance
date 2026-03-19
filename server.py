@@ -56,7 +56,7 @@ def main():
             "FRASER archive, extracts precise numerical values, and performs "
             "multi-step financial computations over 697 PDFs spanning 1939-2025."
         ),
-        url=args.card_url or f"http://{args.host}:{args.port}/",
+        url=args.card_url or "https://agentbeats-finance.chitacloud.dev/",
         version="4.0.0",
         default_input_modes=["text"],
         default_output_modes=["text"],
@@ -76,7 +76,7 @@ def main():
 
     log.info(f"Starting AutoPilotAI Finance Agent v4.0 on {args.host}:{args.port}")
     log.info(f"Benchmark: OfficeQA - US Treasury Bulletins (1939-2025)")
-    log.info(f"Card URL: {args.card_url or f'http://{args.host}:{args.port}/'}")
+    log.info(f"Card URL: {args.card_url or \"https://agentbeats-finance.chitacloud.dev/\"}")
     uvicorn.run(server.build(), host=args.host, port=args.port, timeout_keep_alive=300)
 
 
