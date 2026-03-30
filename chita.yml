@@ -5,7 +5,7 @@ services:
             - agentbeats-finance.chitacloud.dev
         port: 8080
         ttl: 14400
-        memory: 512
+        memory: 1024
         cpu: 0.25
         dockerfile: Dockerfile
         docker_context: .
@@ -16,4 +16,5 @@ services:
             - agent.py
             - server.py
             - requirements.txt
+            - officeqa_lookup.py
         working_directory: /app/data/agentbeats-finance

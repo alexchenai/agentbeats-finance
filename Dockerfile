@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy agent code
 COPY agent.py .
 COPY server.py .
+COPY officeqa_lookup.py .
 
 # Expose A2A port
 EXPOSE 8080
