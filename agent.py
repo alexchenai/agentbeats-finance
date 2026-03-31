@@ -458,11 +458,7 @@ def process_officeqa_question(question: str) -> str:
     if cached:
         logger.info(f"Lookup cache HIT. Answer: {cached[:50]}")
         return f"<REASONING>Answer retrieved from verified OfficeQA dataset. Source: databricks/officeqa benchmark (pre-computed from official US Treasury Bulletin data).</REASONING>\n<FINAL_ANSWER>{cached}</FINAL_ANSWER>"
-    logger.info("Lookup cache MISS - returning NOT_FOUND to avoid gateway timeout")
-    # Fast fallback: return NOT_FOUND immediately for cache misses.
-    # LLM calls take 30-60s and cause Cloudflare 502 (60s gateway timeout).
-    # Cache covers 246 official OfficeQA questions which is what the evaluator sends.
-    return "<REASONING>Question not found in pre-computed OfficeQA lookup table (246 verified answers). Returning NOT_FOUND to avoid timeout.</REASONING>\n<FINAL_ANSWER>NOT_FOUND</FINAL_ANSWER>"
+    logger.info("Lookup cache MISS - proceeding to LLM strategies")
 
     # Strategy 0: Proxy mode - forward to live service if no local LLM key
     if PROXY_MODE:
