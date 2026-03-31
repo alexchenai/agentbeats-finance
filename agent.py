@@ -314,19 +314,49 @@ def get_llm_response(question: str, document_text: Optional[str] = None) -> str:
     except Exception as e:
         logger.warning(f"litellm fallback failed: {e}")
 
-    # Try Pollinations AI (free, no API key required) as last resort
+    # Try blog LLM proxy (proxies to Pollinations, no API key needed)
     try:
         import httpx
         poll_prompt = build_enhanced_prompt(question, None)
-        payload = {
-            "model": "openai-large",
+        proxy_payload = {
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": poll_prompt}
             ],
             "temperature": 0,
-            "max_tokens": 1000,
-            "private": True
+            "max_tokens": 1000
+        }
+        with httpx.Client(timeout=httpx.Timeout(connect=8.0, read=55.0, write=10.0, pool=5.0)) as client:
+            resp = client.post(
+                "https://alexchen.chitacloud.dev/api/v1/llm-proxy",
+                json=proxy_payload,
+                headers={"Content-Type": "application/json"}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if text and "FINAL_ANSWER" in text:
+                    logger.info("Blog LLM proxy returned valid answer")
+                    return text
+                elif text:
+                    import re as re3
+                    nums = re3.findall(r"[\d,]+(?:\.\d+)?", text)
+                    av = nums[-1] if nums else "NOT_FOUND"
+                    return f"<REASONING>{text[:300]}</REASONING>\n<FINAL_ANSWER>{av}</FINAL_ANSWER>"
+    except Exception as e:
+        logger.warning(f"Blog LLM proxy fallback failed: {e}")
+
+    # Try Pollinations AI (free, no API key required) as last resort
+    try:
+        import httpx
+        poll_prompt = build_enhanced_prompt(question, None)
+        payload = {
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": poll_prompt}
+            ],
+            "temperature": 0,
+            "max_tokens": 1000
         }
         with httpx.Client(timeout=httpx.Timeout(connect=8.0, read=45.0, write=10.0, pool=5.0)) as client:
             resp = client.post(
