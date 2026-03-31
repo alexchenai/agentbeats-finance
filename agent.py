@@ -314,6 +314,40 @@ def get_llm_response(question: str, document_text: Optional[str] = None) -> str:
     except Exception as e:
         logger.warning(f"litellm fallback failed: {e}")
 
+    # Try Pollinations AI (free, no API key required) as last resort
+    try:
+        import httpx
+        poll_prompt = build_enhanced_prompt(question, None)
+        payload = {
+            "model": "openai-large",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": poll_prompt}
+            ],
+            "temperature": 0,
+            "max_tokens": 1000,
+            "private": True
+        }
+        with httpx.Client(timeout=httpx.Timeout(connect=8.0, read=45.0, write=10.0, pool=5.0)) as client:
+            resp = client.post(
+                "https://text.pollinations.ai/openai",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if text and "FINAL_ANSWER" in text:
+                    return text
+                elif text:
+                    import re as re2
+                    nums = re2.findall(r"[\d,]+(?:\.\d+)?", text)
+                    av = nums[-1] if nums else "NOT_FOUND"
+                    result = "<REASONING>" + text[:300] + "</REASONING>\n<FINAL_ANSWER>" + av + "</FINAL_ANSWER>"
+                    return result
+    except Exception as e:
+        logger.warning("Pollinations fallback failed: " + str(e))
+
     return _fallback_answer(question)
 
 
